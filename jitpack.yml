@@ -1,0 +1,7 @@
+jdk:
+  - openjdk8
+install:
+  - ./mill lib.test
+  - ./mill generic.test
+  - ./mill lib.publishM2Local
+  - ./mill generic.publishM2Local
