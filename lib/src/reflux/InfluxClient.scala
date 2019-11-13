@@ -8,7 +8,6 @@ import fs2._
 import org.http4s.Method._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
-import org.http4s.client.middleware.GZip
 import org.http4s.headers.{Accept, Authorization}
 import org.http4s.{BasicCredentials, MediaType, Status, Uri, UrlForm}
 
@@ -43,7 +42,7 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
     Stream.eval(POST(UrlForm("q" -> query), queryUri.withQueryParam("chunked", "true"), Accept(MediaType.text.csv))).flatMap(req ⇒
     http.stream(req).flatMap { r ⇒
       if(r.status.isSuccess) r.body.through(Csv.rows(csvDataIndex))
-        else r.body.through(text.utf8Decode).map(s ⇒ throw InfluxException(r.status, s))
+        else r.body.through(text.utf8Decode).flatMap(s ⇒ Stream.raiseError(InfluxException(r.status, s)))
     })
   }
 

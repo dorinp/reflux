@@ -15,7 +15,7 @@ object lib extends CommonModule with PublishM2Module {
   )
 
   def artifactName = "reflux"
-  def publishVersion = "0.0.4"
+  def publishVersion = "0.0.5"
 
   def ivyDeps = Agg(
     ivy"org.http4s::http4s-blaze-client:0.20.11",
