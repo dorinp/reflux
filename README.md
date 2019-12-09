@@ -65,7 +65,7 @@ import reflux.generic.auto._
 implicit val encoder = jsonArrayEncoder[IO, MyClass]()
 case class Weather(city: String, temperature: Int)
 
-case GET -> Root / "weather"  ⇒
+case GET -> Root / "weather"  =>
   val stream = influx.stream[Weather]("select * from weather")
   Ok(stream)
 ```

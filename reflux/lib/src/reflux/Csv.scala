@@ -33,7 +33,7 @@ case class CsvRow(header: CsvHeader, data: Array[String], cursor: Int) {
   def getString(index: Int): String = data(index)
   def getAtCursor: String = data(cursor)
 
-  def tags: Array[(String, String)] = getString("tags").split(",").flatMap(a ⇒ {
+  def tags: Array[(String, String)] = getString("tags").split(",").flatMap(a => {
     val arr = a.split("="); if (arr.length > 1) Some(arr(0) → arr(1)) else None
   })
 
@@ -45,7 +45,7 @@ case class Measurement(values: Seq[(String, String)], tags: Seq[(String, String)
 
 object Measurement {
   def create[A, B](values: Seq[(String, A)], tags: Seq[(String, B)], time: Option[Instant])(implicit writeA: Write[A], writeB: Write[B]): Measurement =
-    new Measurement(values.map{ case (n,v) ⇒ (n, writeA.write(v))}, tags.map{ case (n,v) ⇒ (n, writeB.write(v))}, time)
+    new Measurement(values.map{ case (n,v) => (n, writeA.write(v))}, tags.map{ case (n,v) => (n, writeB.write(v))}, time)
 }
 
 trait ToMeasurement[A] {
@@ -54,7 +54,7 @@ trait ToMeasurement[A] {
 }
 
 object ToMeasurement {
-  def instance[A](name: String, f: A ⇒ Measurement): ToMeasurement[A] = new ToMeasurement[A] {
+  def instance[A](name: String, f: A => Measurement): ToMeasurement[A] = new ToMeasurement[A] {
     override def measurementName: String = name
     override def write(a: A): Measurement = f(a)
   }
@@ -77,12 +77,12 @@ object Read {
   implicit val stringRead: Read[String] = Read.instance(_.getAtCursor)
   implicit val intRead: Read[Int] = Read.instance(_.getAtCursor.toInt)
   implicit val longRead: Read[Long] = Read.instance(_.getAtCursor.toLong)
-  implicit val boolRead: Read[Boolean] = Read.instance(x ⇒ !(x.getAtCursor == "0"))
+  implicit val boolRead: Read[Boolean] = Read.instance(x => !(x.getAtCursor == "0"))
   implicit val doubleRead: Read[Double] = Read.instance(_.getAtCursor.toDouble)
-  implicit val bigDRead: Read[BigDecimal] = Read.instance(r ⇒ BigDecimal(r.getAtCursor))
-  implicit val timeRead: Read[TimeColumn] = Read.instance(r ⇒ TimeColumn(r.time))
-  implicit val instantRead: Read[Instant] = Read.instance(r ⇒ Instant.ofEpochMilli(r.getString("time").toLong))
-  implicit def optionRead[A](implicit reader: Read[A]): Read[Option[A]] = Read.instance(row ⇒ if (row.getAtCursor.isEmpty) None else Some(reader.read(row)))
+  implicit val bigDRead: Read[BigDecimal] = Read.instance(r => BigDecimal(r.getAtCursor))
+  implicit val timeRead: Read[TimeColumn] = Read.instance(r => TimeColumn(r.time))
+  implicit val instantRead: Read[Instant] = Read.instance(r => Instant.ofEpochMilli(r.getString("time").toLong))
+  implicit def optionRead[A](implicit reader: Read[A]): Read[Option[A]] = Read.instance(row => if (row.getAtCursor.isEmpty) None else Some(reader.read(row)))
 }
 
 trait Write[A] {
@@ -90,7 +90,7 @@ trait Write[A] {
 }
 
 object Write {
-  def instance[A](f: A ⇒ String) = new Write[A] {
+  def instance[A](f: A => String) = new Write[A] {
     override def write(a: A): String = f(a)
   }
 
@@ -102,12 +102,12 @@ object Write {
 }
 
 object Csv {
-  def rows[F[_], O](dataIndex: Int): Pipe[F, Byte, CsvRow] = in ⇒ {
+  def rows[F[_], O](dataIndex: Int): Pipe[F, Byte, CsvRow] = in => {
     in.through(text.utf8Decode)
       .through(text.lines)
       .filter(!_.isEmpty)
       .scan(null: CsvRow) {
-        case (acc, line) ⇒ if (acc == null) CsvRow(new CsvHeader(line), null, dataIndex) else CsvRow(acc.header, Csv.split(line), dataIndex)
+        case (acc, line) => if (acc == null) CsvRow(new CsvHeader(line), null, dataIndex) else CsvRow(acc.header, Csv.split(line), dataIndex)
       }
     }.drop(2)
 

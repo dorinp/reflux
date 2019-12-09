@@ -39,10 +39,10 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
   protected def stream[A](query: String, csvDataIndex: Int = 3)(implicit reader: Read[A]): Stream[F, A] = streamRaw(query, csvDataIndex).map(reader.read)
 
   def streamRaw(query: String, csvDataIndex: Int = 3): Stream[F, CsvRow] = {
-    Stream.eval(POST(UrlForm("q" -> query), queryUri.withQueryParam("chunked", "true"), Accept(MediaType.text.csv))).flatMap(req ⇒
-    http.stream(req).flatMap { r ⇒
+    Stream.eval(POST(UrlForm("q" -> query), queryUri.withQueryParam("chunked", "true"), Accept(MediaType.text.csv))).flatMap(req =>
+    http.stream(req).flatMap { r =>
       if(r.status.isSuccess) r.body.through(Csv.rows(csvDataIndex))
-        else r.body.through(text.utf8Decode).flatMap(s ⇒ Stream.raiseError(InfluxException(r.status, s)))
+        else r.body.through(text.utf8Decode).flatMap(s => Stream.raiseError(InfluxException(r.status, s)))
     })
   }
 
@@ -57,11 +57,11 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
 
 case class InfluxException(status: Status, message: String) extends Throwable(s"$status: $message")
 
-trait Tools[F[_]] { self: InfluxClient[F] ⇒
+trait Tools[F[_]] { self: InfluxClient[F] =>
   import cats.syntax.functor._
   implicit val sync: Functor[F]
-  def createDatabase(name: String): F[Unit] = exec(s"""CREATE DATABASE "$name"""").map(_ ⇒ ())
-  def dropDatabase(name: String): F[Unit]             = exec(s"""DROP DATABASE "$name"""").map(_ ⇒ ())
+  def createDatabase(name: String): F[Unit] = exec(s"""CREATE DATABASE "$name"""").map(_ => ())
+  def dropDatabase(name: String): F[Unit]             = exec(s"""DROP DATABASE "$name"""").map(_ => ())
   def listDatabases:  F[Vector[String]]               = exec("SHOW DATABASES").map(_.filter(_ != "_internal"))
   def listUsers:      F[Vector[String]]               = exec("SHOW USERS")
 
