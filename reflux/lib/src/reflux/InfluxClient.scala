@@ -2,20 +2,21 @@ package reflux
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-import cats.Functor
 import cats.effect.Sync
+import cats.{Functor, Monad}
 import fs2._
 import org.http4s.Method._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers.{Accept, Authorization}
-import org.http4s.{BasicCredentials, MediaType, Status, Uri, UrlForm}
+import org.http4s.{BasicCredentials, MediaType, Response, Status, Uri, UrlForm}
 
 import scala.language.higherKinds
 
 class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String] = None)(implicit val sync: Sync[F]) extends Http4sClientDsl[F] with Tools[F] {
   private val queryUri: Uri = (serverUrl / "query").withOptionQueryParam("db", db).withQueryParam("epoch", "ms")
   private val writeUri: Uri = (serverUrl / "write").withOptionQueryParam("db", db).withQueryParam("precision", "ms")
+
 
   def write(measurement: String, values: Measurement*): F[Unit] = write(measurement, fs2.Stream(values: _*))
 
@@ -31,7 +32,9 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
       s"$measurement,${commaSeparatedNameValues(m.tags)} ${commaSeparatedNameValues(m.values)} ${m.time.map(_.toEpochMilli).getOrElse("")}\n"
     def toByteChunk(m: Measurement) = Chunk.bytes(toStr(m).getBytes(UTF_8))
 
-    http.expect[Unit](POST(values.mapChunks(_.flatMap(toByteChunk)), writeUri))
+    http.fetch(POST(values.mapChunks(_.flatMap(toByteChunk)), writeUri)) { r =>
+      if(r.status.isSuccess) Monad[F].unit else handleError(r).as(()).compile.lastOrError
+    }
   }
 
   def stream[A](query: String)(implicit reader: Read[A]): Stream[F, A] = stream[A](query, 3)
@@ -41,10 +44,11 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
   def streamRaw(query: String, csvDataIndex: Int = 3): Stream[F, CsvRow] = {
     Stream.eval(POST(UrlForm("q" -> query), queryUri.withQueryParam("chunked", "true"), Accept(MediaType.text.csv))).flatMap(req =>
     http.stream(req).flatMap { r =>
-      if(r.status.isSuccess) r.body.through(Csv.rows(csvDataIndex))
-        else r.body.through(text.utf8Decode).flatMap(s => Stream.raiseError(InfluxException(r.status, s)))
+      if(r.status.isSuccess) r.body.through(Csv.rows(csvDataIndex)) else handleError(r)
     })
   }
+
+  private def handleError(r: Response[F]) = r.body.through(text.utf8Decode).take(4096).flatMap(s => Stream.raiseError(InfluxException(r.status, s)))
 
   def asVector[A : Read](query: String): F[Vector[A]] = stream[A](query).compile.toVector
 
