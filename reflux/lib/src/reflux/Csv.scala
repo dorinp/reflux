@@ -88,8 +88,9 @@ object TimeColumn {
 }
 case class TimeColumn(time: Instant) extends AnyVal
 
-trait Read[A] {
+trait Read[A] { self =>
   def read(row: CsvRow): A
+  def map[B](f: A => B): Read[B] = (row: CsvRow) => f(self.read(row))
 }
 
 object Read {
