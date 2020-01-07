@@ -54,9 +54,9 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
 
   def exec(query: String): F[Vector[String]] = stream[String](query, 2).compile.toVector
 
-  def use(database: String) = new InfluxClient(http, serverUrl, Some(database))
+  def use(database: String): InfluxClient[F] = new InfluxClient(http, serverUrl, Some(database))
 
-  def withCredentials(username: String, password: String) = new InfluxClient(Authenticator(username, password)(http), serverUrl, db)
+  def withCredentials(username: String, password: String): InfluxClient[F] = new InfluxClient(Authenticator(username, password)(http), serverUrl, db)
 }
 
 case class InfluxException(status: Status, message: String) extends Throwable(s"$status: $message")
