@@ -13,7 +13,7 @@ class CsvHeader(headerLine: String) {
   private val indices: Map[String, Int] = cols.zipWithIndex.toMap
 
   def getString(data: Array[String], column: String): String = data(indices(column))
-
+  def indexOf(column: String): Int = indices(column)
   def columns = cols.drop(3)
   def columnCount: Int = indices.size
   override def toString: String = headerLine
@@ -26,7 +26,7 @@ case class CsvRow(header: CsvHeader, data: Array[String], cursor: Int) {
 
   def getTag(name: String): Option[String] = tags.find(_._1 == name).map(_._2)
 
-  def get[A](field: String)(implicit read: Read[A]): A = read.read(this)
+  def get[A](field: String)(implicit read: Read[A]): A = read.read(this.copy(cursor = header.indexOf(field)))
 
   def getOption(field: String): Option[String] = { val a = header.getString(data, field); if(a.isEmpty) None else Some(a) }
   def getString(field: String): String = header.getString(data, field)
