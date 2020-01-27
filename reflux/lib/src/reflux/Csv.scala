@@ -41,11 +41,34 @@ case class CsvRow(header: CsvHeader, data: Array[String], cursor: Int) {
   override def toString: String = data.mkString("[",",", "]")
 }
 
+
+
 case class Measurement(values: Seq[(String, String)], tags: Seq[(String, String)] = Seq.empty, time: Option[Instant] = None)
 
 object Measurement {
   def create[A, B](values: Seq[(String, A)], tags: Seq[(String, B)], time: Option[Instant])(implicit writeA: Write[A], writeB: Write[B]): Measurement =
     new Measurement(values.map{ case (n,v) => (n, writeA.write(v))}, tags.map{ case (n,v) => (n, writeB.write(v))}, time)
+
+  def create(time: Option[Instant], columns: Column*): Measurement = {
+    val (fields, tags) = columns.partition { case _: Field => true; case _ => false }
+    new Measurement(fields.map(f => f.name -> f.value), tags.map(t => t.name -> t.value), time)
+  }
+}
+
+sealed trait Column {
+  def name: String
+  def value: String
+}
+
+case class Tag(name: String, value: String) extends Column
+case class Field(name: String, value: String) extends Column
+
+object Field {
+  def apply[A](name: String, value: A)(implicit write: Write[A]): Field = Field(name, write.write(value))
+}
+
+object Tag {
+  def apply[A](name: String, value: A)(implicit write: Write[A]): Tag = Tag(name, write.write(value))
 }
 
 trait ToMeasurement[A] {
