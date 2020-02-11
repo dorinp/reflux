@@ -19,8 +19,8 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
 
     def artifactName = "reflux"
 
-    def publishVersion = "0.0.11"
-    val http4sVersion = if (crossScalaVersion.startsWith("2.12")) "0.20.17" else "0.21.0-RC2"
+    def publishVersion = "0.0.12"
+    val http4sVersion = if (crossScalaVersion.startsWith("2.12")) "0.20.17" else "0.21.0"
 
     def ivyDeps = Agg(
       ivy"org.http4s::http4s-blaze-client:$http4sVersion",
