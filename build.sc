@@ -3,7 +3,7 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.publishM2:0.1.0`
 import de.tobiasroeser.mill.publishM2._
 
 // mill mill.scalalib.GenIdea/idea
-object reflux extends Cross[RefluxModule]("2.12.10", "2.13.1")
+object reflux extends Cross[RefluxModule]("2.12.12", "2.13.4")
 
 class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
 
@@ -19,8 +19,8 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
 
     def artifactName = "reflux"
 
-    def publishVersion = "0.0.7"
-    val http4sVersion = if (crossScalaVersion.startsWith("2.12")) "0.20.15" else "0.21.0-M6"
+    def publishVersion = "0.0.8"
+    val http4sVersion = if (crossScalaVersion.startsWith("2.12")) "0.20.23" else "0.21.13"
 
     def ivyDeps = Agg(
       ivy"org.http4s::http4s-blaze-client:$http4sVersion",
