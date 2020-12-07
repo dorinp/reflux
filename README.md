@@ -13,7 +13,7 @@ resolvers += "jitpack" at "https://jitpack.io"
 ```
 Add reflux as a dependency 
 ```scala
-libraryDependencies += "com.github.dorinp.reflux" %% "reflux-generic" % "0.0.8"
+libraryDependencies += "com.github.dorinp.reflux" %% "reflux-generic" % "0.0.14"
 ```
 ```scala
 val influx = reflux.clientIO("http://localhost:8086").unsafeRunSync().use("mydatabase").withCredentials("user", "password")
@@ -40,7 +40,7 @@ destination.write("dbcopy", data)
 ```
 #### Automatic `Read` derivation
 ```scala
-libraryDependencies += "org.reflux"  %% "reflux-generic" % "0.0.3"
+libraryDependencies += "org.reflux"  %% "reflux-generic" % "0.0.14"
 ```
 ```scala
 import reflux.generic.auto._
