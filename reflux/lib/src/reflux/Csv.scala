@@ -152,7 +152,7 @@ object Csv {
       }
       i += 1
     }
-    words += s.substring(start)
+    words += s.substring(start, i - x)
     words.toArray[String]
   }
 }
