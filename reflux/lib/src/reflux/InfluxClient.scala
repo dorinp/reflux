@@ -15,22 +15,33 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
   private val queryUri: Uri = (serverUrl / "query").withOptionQueryParam("db", db).withQueryParam("epoch", "ms")
   private val writeUri: Uri = (serverUrl / "write").withOptionQueryParam("db", db).withQueryParam("precision", "ms")
 
+  def write(retentionPolicy: String, measurement: String, values: Measurement*): F[Unit] =
+    write(measurement, fs2.Stream(values: _*), Some(retentionPolicy))
 
-  def write(measurement: String, values: Measurement*): F[Unit] = write(measurement, fs2.Stream(values: _*))
+  def write(measurement: String, values: Measurement*): F[Unit] =
+    write(measurement, fs2.Stream(values: _*))
 
-  def write[A](values: Iterable[A])(implicit mapper: ToMeasurement[A]): F[Unit] = write(Stream.fromIterator(values.iterator))
+  def write[A](values: Iterable[A])(implicit mapper: ToMeasurement[A]): F[Unit] = write(values, None)
 
-  def write[A](values: fs2.Stream[F, A])(implicit mapper: ToMeasurement[A]): F[Unit] =
-    write(mapper.measurementName, values.map(mapper.write))
+  def write[A](values: Iterable[A], retentionPolicy: Option[String])(implicit mapper: ToMeasurement[A]): F[Unit] =
+    write(Stream.fromIterator(values.iterator), retentionPolicy)
 
-  def write(measurement: String, values: fs2.Stream[F, Measurement]): F[Unit] = {
+  def write[A](values: fs2.Stream[F, A])(implicit mapper: ToMeasurement[A]): F[Unit] = write(values, None)
+
+  def write[A](values: fs2.Stream[F, A], retentionPolicy: Option[String])(implicit mapper: ToMeasurement[A]): F[Unit] =
+    write(mapper.measurementName, values.map(mapper.write), retentionPolicy)
+
+  def write(measurement: String, values: fs2.Stream[F, Measurement]): F[Unit] =
+    write(measurement, values, None)
+
+  def write(measurement: String, values: fs2.Stream[F, Measurement], retentionPolicy: Option[String]): F[Unit] = {
     def nameValue(t: (String, String))                      = t._1 + "=" + t._2
     def commaSeparatedNameValues(vs: Seq[(String, String)]) = vs.map(nameValue).mkString(",")
     def toStr(m: Measurement) =
       s"$measurement,${commaSeparatedNameValues(m.tags)} ${commaSeparatedNameValues(m.values)} ${m.time.map(_.toEpochMilli).getOrElse("")}\n"
     def toByteChunk(m: Measurement) = Chunk.bytes(toStr(m).getBytes(UTF_8))
 
-    http.run(Request[F](POST, writeUri, body = values.mapChunks(_.flatMap(toByteChunk)))).use { r =>
+    http.run(Request[F](POST, writeUri.withOptionQueryParam("rp", retentionPolicy), body = values.mapChunks(_.flatMap(toByteChunk)))).use { r =>
       if(r.status.isSuccess) Monad[F].unit else handleError(r).as(()).compile.lastOrError
     }
   }
