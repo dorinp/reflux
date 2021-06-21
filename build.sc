@@ -19,7 +19,7 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
 
     def artifactName = "reflux"
 
-    def publishVersion = "0.0.15"
+    def publishVersion = "0.0.16"
     val http4sVersion = "0.21.24"
 
     def ivyDeps = Agg(
