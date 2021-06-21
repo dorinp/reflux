@@ -1,7 +1,5 @@
 package reflux
 
-import java.time.Instant
-
 import cats.effect.{ContextShift, IO, Timer}
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, postRequestedFor, urlPathMatching}
@@ -9,9 +7,13 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockRule
 import org.http4s._
 import org.http4s.client.blaze.BlazeClientBuilder
-import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class GenericSpec extends FunSuite with Matchers with BeforeAndAfterEach {
+import java.time.Instant
+
+class GenericSpec extends AnyFunSuite with Matchers with BeforeAndAfterEach {
   private val stubs = new FakeInflux()
   val influx = stubs.client
 
@@ -44,7 +46,7 @@ class GenericSpec extends FunSuite with Matchers with BeforeAndAfterEach {
   }
 
   test("writing") {
-    influx.write("temperature", Measurement(Seq("temperature" → "11"), Seq("city" → "london"), time = Some(Instant.EPOCH))).unsafeRunSync()
+    influx.write("temperature", Measurement(Seq("temperature" -> "11"), Seq("city" -> "london"), time = Some(Instant.EPOCH))).unsafeRunSync()
     stubs.verifyDataPosted("temperature,city=london temperature=11 0\n")
   }
 

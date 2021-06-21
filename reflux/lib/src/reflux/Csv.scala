@@ -1,11 +1,10 @@
 package reflux
 
 import java.time.Instant
-
 import cats.Eq
 import fs2.{Pipe, text}
 
-import scala.language.higherKinds
+import scala.collection.immutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
 
 class CsvHeader(headerLine: String) {
@@ -34,10 +33,10 @@ case class CsvRow(header: CsvHeader, data: Array[String], cursor: Int) {
   def getAtCursor: String = data(cursor)
 
   def tags: Array[(String, String)] = getString("tags").split(",").flatMap(a => {
-    val arr = a.split("="); if (arr.length > 1) Some(arr(0) → arr(1)) else None
+    val arr = a.split("="); if (arr.length > 1) Some(arr(0) -> arr(1)) else None
   })
 
-  def toMeasurement: Measurement = Measurement(header.columns.zip(data.drop(3)), tags, time = Some(time))
+  def toMeasurement: Measurement = Measurement(ArraySeq.unsafeWrapArray(header.columns).zip(data.drop(3)), ArraySeq.unsafeWrapArray(tags), time = Some(time))
   override def toString: String = data.mkString("[",",", "]")
 }
 

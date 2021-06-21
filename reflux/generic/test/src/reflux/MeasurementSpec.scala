@@ -1,10 +1,11 @@
 package reflux
 
-import java.time.Instant
+import org.scalatest.funsuite.AnyFunSuite
 
+import java.time.Instant
 import org.scalatest.matchers.should.Matchers
 
-class MeasurementSpec extends org.scalatest.FunSuite with Matchers {
+class MeasurementSpec extends AnyFunSuite with Matchers {
 
   test("create measurement") {
     val t = Some(Instant.ofEpochMilli(0))

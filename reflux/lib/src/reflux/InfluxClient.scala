@@ -1,7 +1,5 @@
 package reflux
 
-import java.nio.charset.StandardCharsets.UTF_8
-
 import cats.effect.Sync
 import cats.{Functor, Monad}
 import fs2._
@@ -9,9 +7,9 @@ import org.http4s.Method._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers.{Accept, Authorization}
-import org.http4s.{BasicCredentials, MediaType, Response, Status, Uri, UrlForm}
+import org.http4s._
 
-import scala.language.higherKinds
+import java.nio.charset.StandardCharsets.UTF_8
 
 class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String] = None)(implicit val sync: Sync[F]) extends Http4sClientDsl[F] with Tools[F] {
   private val queryUri: Uri = (serverUrl / "query").withOptionQueryParam("db", db).withQueryParam("epoch", "ms")
@@ -32,7 +30,7 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
       s"$measurement,${commaSeparatedNameValues(m.tags)} ${commaSeparatedNameValues(m.values)} ${m.time.map(_.toEpochMilli).getOrElse("")}\n"
     def toByteChunk(m: Measurement) = Chunk.bytes(toStr(m).getBytes(UTF_8))
 
-    http.fetch(POST(values.mapChunks(_.flatMap(toByteChunk)), writeUri)) { r =>
+    http.run(Request[F](POST, writeUri, body = values.mapChunks(_.flatMap(toByteChunk)))).use { r =>
       if(r.status.isSuccess) Monad[F].unit else handleError(r).as(()).compile.lastOrError
     }
   }
