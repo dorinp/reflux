@@ -3,7 +3,7 @@ import scalalib._
 import publish._
 
 // mill mill.scalalib.GenIdea/idea
-object reflux extends Cross[RefluxModule]("2.12.14", "2.13.6")
+object reflux extends Cross[RefluxModule]("2.13.6")
 
 class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
 
@@ -19,15 +19,15 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
 
     def artifactName = "reflux"
 
-    def publishVersion = "0.0.16"
-    val http4sVersion = "0.21.24"
+    def publishVersion = "0.0.17"
+    val http4sVersion = "0.22.6"
 
     def ivyDeps = Agg(
       ivy"org.http4s::http4s-blaze-client:$http4sVersion",
       ivy"org.http4s::http4s-client:$http4sVersion",
     )
 
-    object test extends Tests with ScalaTest
+    object test extends Tests with ScalaTests
 
   }
 
@@ -37,7 +37,7 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
     def publishVersion = lib.publishVersion
     def pomSettings: T[PomSettings] = lib.pomSettings
     def ivyDeps = Agg(ivy"com.chuusai::shapeless:2.3.3")
-    object test extends Tests with ScalaTest
+    object test extends Tests with ScalaTests
   }
 
   trait CommonModule extends ScalaModule {
@@ -45,15 +45,13 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
     override def scalacOptions = Seq("-feature", "-deprecation")
   }
 
-  trait ScalaTest extends mill.scalalib.TestModule {
+  trait ScalaTests extends mill.scalalib.TestModule.ScalaTest {
     def ivyDeps = Agg(
       ivy"org.scalatest::scalatest:3.2.9",
       ivy"junit:junit:4.13.2",
       ivy"com.github.tomakehurst:wiremock-jre8:2.28.1",
       ivy"org.slf4j:slf4j-simple:1.7.25",
     )
-
-    def testFrameworks = Seq("org.scalatest.tools.Framework")
   }
 
 }

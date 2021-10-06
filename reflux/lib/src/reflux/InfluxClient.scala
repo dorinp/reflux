@@ -49,10 +49,10 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
   protected def stream[A](query: String, csvDataIndex: Int = 3)(implicit reader: Read[A]): Stream[F, A] = streamRaw(query, csvDataIndex).map(reader.read)
 
   def streamRaw(query: String, csvDataIndex: Int = 3): Stream[F, CsvRow] = {
-    Stream.eval(POST(UrlForm("q" -> query), queryUri.withQueryParam("chunked", "true"), Accept(MediaType.text.csv))).flatMap(req =>
+    val req = Request[F](POST, queryUri.withQueryParam("chunked", "true"), headers = Headers(Accept(MediaType.text.csv))).withEntity(UrlForm("q" -> query))
     http.stream(req).flatMap { r =>
       if(r.status.isSuccess) r.body.through(Csv.rows(csvDataIndex)) else handleError(r)
-    })
+    }
   }
 
   private def handleError(r: Response[F]) = r.body.through(text.utf8Decode).take(4096).flatMap(s => Stream.raiseError(InfluxException(r.status, s)))

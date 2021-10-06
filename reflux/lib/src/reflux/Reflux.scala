@@ -1,12 +1,11 @@
 package reflux
 
 import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
-import cats.syntax.functor._
+import cats.implicits.toFunctorOps
 import org.http4s.Uri
-import org.http4s.client.blaze.BlazeClientBuilder
+import org.http4s.blaze.client.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.language.higherKinds
 
 object Reflux {
   def client[F[_] : ConcurrentEffect](serverUrl: String): F[InfluxClient[F]] = client(Uri.unsafeFromString(serverUrl))

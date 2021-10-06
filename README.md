@@ -13,7 +13,7 @@ resolvers += "jitpack" at "https://jitpack.io"
 ```
 Add reflux as a dependency 
 ```scala
-libraryDependencies += "com.github.dorinp.reflux" %% "reflux-generic" % "0.0.14"
+libraryDependencies += "com.github.dorinp.reflux" %% "reflux-generic" % "0.0.17"
 ```
 ```scala
 val influx = reflux.clientIO("http://localhost:8086").unsafeRunSync().use("mydatabase").withCredentials("user", "password")
