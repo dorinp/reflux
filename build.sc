@@ -19,7 +19,7 @@ object reflux extends ScalaModule {
 
     override def artifactName = "reflux"
 
-    def publishVersion = "0.0.15"
+    def publishVersion = "0.1.1"
     val http4sVersion = "0.23.11"
 
     override def ivyDeps = Agg(
@@ -36,7 +36,7 @@ object reflux extends ScalaModule {
     override def artifactName = "reflux-generic"
     def publishVersion = lib.publishVersion
     def pomSettings: T[PomSettings] = lib.pomSettings
-    override def ivyDeps = Agg(ivy"com.chuusai::shapeless:2.3.3")
+    override def ivyDeps = Agg(ivy"com.chuusai::shapeless:2.3.9")
     object test extends Tests with ScalaTest
   }
 

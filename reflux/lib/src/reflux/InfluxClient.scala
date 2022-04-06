@@ -39,9 +39,8 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
     def commaSeparatedNameValues(vs: Seq[(String, String)]) = vs.map(nameValue).mkString(",")
     def toStr(m: Measurement) =
       s"$measurement,${commaSeparatedNameValues(m.tags)} ${commaSeparatedNameValues(m.values)} ${m.time.map(_.toEpochMilli).getOrElse("")}\n"
-    def toByteChunk(m: Measurement):Chunk[Byte] = Chunk.array(toStr(m).getBytes(UTF_8))
 
-    http.run(Request[F](POST, writeUri.withOptionQueryParam("rp", retentionPolicy), body = values.mapChunks(_.flatMap(toByteChunk)))).use { r =>
+    http.run(Request[F](POST, writeUri.withOptionQueryParam("rp", retentionPolicy), body = values.map(toStr).through(text.utf8.encode))).use { r =>
       if(r.status.isSuccess) Monad[F].unit else handleError(r).as(()).compile.lastOrError
     }
   }
