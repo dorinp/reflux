@@ -1,15 +1,16 @@
 package reflux
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, postRequestedFor, urlPathMatching}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockRule
 import org.http4s._
-import org.http4s.client.blaze.BlazeClientBuilder
+import org.http4s.blaze.client.BlazeClientBuilder
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import cats.effect.unsafe.implicits.global
 
 import java.time.Instant
 
@@ -57,15 +58,12 @@ class GenericSpec extends AnyFunSuite with Matchers with BeforeAndAfterEach {
 }
 
 class FakeInflux {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   private val wiremock = new WireMockRule(WireMockConfiguration.options().dynamicPort())
   wiremock.start()
 
-  private implicit val shift: ContextShift[IO] = IO.contextShift(global)
-  private implicit val timer: Timer[IO] = IO.timer(global)
 
-  private val http = BlazeClientBuilder[IO](global).resource.allocated.unsafeRunSync()._1
+  private val http = BlazeClientBuilder[IO].resource.allocated.unsafeRunSync()._1
   val client = new InfluxClient[IO](http, Uri.unsafeFromString(s"http://localhost:${wiremock.port()}"))
 
   def reset() = {

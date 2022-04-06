@@ -3,9 +3,9 @@ import scalalib._
 import publish._
 
 // mill mill.scalalib.GenIdea/idea
-object reflux extends Cross[RefluxModule]("2.12.14", "2.13.6")
+object reflux extends ScalaModule {
 
-class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
+  override def scalaVersion = "2.13.8"
 
   object lib extends CommonModule with PublishModule {
     def pomSettings = PomSettings(
@@ -17,12 +17,12 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
       developers = Seq.empty
     )
 
-    def artifactName = "reflux"
+    override def artifactName = "reflux"
 
     def publishVersion = "0.0.15"
-    val http4sVersion = "0.21.24"
+    val http4sVersion = "0.23.11"
 
-    def ivyDeps = Agg(
+    override def ivyDeps = Agg(
       ivy"org.http4s::http4s-blaze-client:$http4sVersion",
       ivy"org.http4s::http4s-client:$http4sVersion",
     )
@@ -32,28 +32,27 @@ class RefluxModule(val crossScalaVersion: String) extends CrossScalaModule {
   }
 
   object generic extends CommonModule with PublishModule {
-    def moduleDeps = Seq(lib)
-    def artifactName = "reflux-generic"
+    override def moduleDeps = Seq(lib)
+    override def artifactName = "reflux-generic"
     def publishVersion = lib.publishVersion
     def pomSettings: T[PomSettings] = lib.pomSettings
-    def ivyDeps = Agg(ivy"com.chuusai::shapeless:2.3.3")
+    override def ivyDeps = Agg(ivy"com.chuusai::shapeless:2.3.3")
     object test extends Tests with ScalaTest
   }
 
   trait CommonModule extends ScalaModule {
-    def scalaVersion = crossScalaVersion
+    def scalaVersion = reflux.scalaVersion
     override def scalacOptions = Seq("-feature", "-deprecation")
   }
 
   trait ScalaTest extends mill.scalalib.TestModule {
-    def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.2.9",
+    override def ivyDeps = Agg(
+      ivy"org.scalatest::scalatest:3.2.11",
       ivy"junit:junit:4.13.2",
-      ivy"com.github.tomakehurst:wiremock-jre8:2.28.1",
-      ivy"org.slf4j:slf4j-simple:1.7.25",
+      ivy"com.github.tomakehurst:wiremock-jre8:2.27.2",
+      ivy"org.slf4j:slf4j-simple:1.7.36",
     )
 
-    def testFrameworks = Seq("org.scalatest.tools.Framework")
+    override def testFramework = "org.scalatest.tools.Framework"
   }
-
 }
