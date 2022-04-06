@@ -125,7 +125,7 @@ object Write {
 
 object Csv {
   def rows[F[_], O](dataIndex: Int): Pipe[F, Byte, CsvRow] = in => {
-    in.through(text.utf8Decode)
+    in.through(text.utf8.decode)
       .through(text.lines)
       .filter(!_.isEmpty)
       .scan(null: CsvRow) {

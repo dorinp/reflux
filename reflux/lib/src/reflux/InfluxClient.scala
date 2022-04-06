@@ -24,7 +24,7 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
   def write[A](values: Iterable[A])(implicit mapper: ToMeasurement[A]): F[Unit] = write(values, None)
 
   def write[A](values: Iterable[A], retentionPolicy: Option[String])(implicit mapper: ToMeasurement[A]): F[Unit] =
-    write(Stream.fromIterator(values.iterator), retentionPolicy)
+    write(fs2.Stream.fromIterator(values.iterator, 1024), retentionPolicy)
 
   def write[A](values: fs2.Stream[F, A])(implicit mapper: ToMeasurement[A]): F[Unit] = write(values, None)
 
@@ -39,7 +39,7 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
     def commaSeparatedNameValues(vs: Seq[(String, String)]) = vs.map(nameValue).mkString(",")
     def toStr(m: Measurement) =
       s"$measurement,${commaSeparatedNameValues(m.tags)} ${commaSeparatedNameValues(m.values)} ${m.time.map(_.toEpochMilli).getOrElse("")}\n"
-    def toByteChunk(m: Measurement) = Chunk.bytes(toStr(m).getBytes(UTF_8))
+    def toByteChunk(m: Measurement):Chunk[Byte] = Chunk.array(toStr(m).getBytes(UTF_8))
 
     http.run(Request[F](POST, writeUri.withOptionQueryParam("rp", retentionPolicy), body = values.mapChunks(_.flatMap(toByteChunk)))).use { r =>
       if(r.status.isSuccess) Monad[F].unit else handleError(r).as(()).compile.lastOrError
@@ -51,13 +51,12 @@ class InfluxClient[F[_]](http: Client[F], val serverUrl: Uri, db: Option[String]
   protected def stream[A](query: String, csvDataIndex: Int = 3)(implicit reader: Read[A]): Stream[F, A] = streamRaw(query, csvDataIndex).map(reader.read)
 
   def streamRaw(query: String, csvDataIndex: Int = 3): Stream[F, CsvRow] = {
-    Stream.eval(POST(UrlForm("q" -> query), queryUri.withQueryParam("chunked", "true"), Accept(MediaType.text.csv))).flatMap(req =>
-    http.stream(req).flatMap { r =>
+    http.stream(POST(UrlForm("q" -> query), queryUri.withQueryParam("chunked", "true"), Accept(MediaType.text.csv))).flatMap { r =>
       if(r.status.isSuccess) r.body.through(Csv.rows(csvDataIndex)) else handleError(r)
-    })
+    }
   }
 
-  private def handleError(r: Response[F]) = r.body.through(text.utf8Decode).take(4096).flatMap(s => Stream.raiseError(InfluxException(r.status, s)))
+  private def handleError(r: Response[F]) = r.body.through(text.utf8.decode).take(4096).flatMap(s => Stream.raiseError(InfluxException(r.status, s)))
 
   def asVector[A : Read](query: String): F[Vector[A]] = stream[A](query).compile.toVector
 
