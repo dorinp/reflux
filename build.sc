@@ -2,10 +2,10 @@ import mill._
 import scalalib._
 import publish._
 
-// mill mill.scalalib.GenIdea/idea
 object reflux extends ScalaModule {
 
-  override def scalaVersion = "2.13.8"
+  override def scalaVersion = "2.13.10"
+  val http4sVersion = "0.23.18"
 
   object lib extends CommonModule with PublishModule {
     def pomSettings = PomSettings(
@@ -19,13 +19,14 @@ object reflux extends ScalaModule {
 
     override def artifactName = "reflux"
 
-    def publishVersion = "0.1.1"
-    val http4sVersion = "0.23.11"
+    def publishVersion = "0.1.2"
 
     override def ivyDeps = Agg(
-      ivy"org.http4s::http4s-blaze-client:$http4sVersion",
       ivy"org.http4s::http4s-client:$http4sVersion",
     )
+
+
+    def scalacOptions = Seq("-Xsource:3", "-Ywarn-value-discard", "-Wunused:patvars", "-Wunused:privates", "-Wunused:locals", "-Wunused:params")
 
     object test extends Tests with ScalaTest
 
@@ -47,10 +48,11 @@ object reflux extends ScalaModule {
 
   trait ScalaTest extends mill.scalalib.TestModule {
     override def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.2.11",
+      ivy"org.scalatest::scalatest:3.2.15",
       ivy"junit:junit:4.13.2",
       ivy"com.github.tomakehurst:wiremock-jre8:2.27.2",
       ivy"org.slf4j:slf4j-simple:1.7.36",
+      ivy"org.http4s::http4s-ember-client:$http4sVersion",
     )
 
     override def testFramework = "org.scalatest.tools.Framework"

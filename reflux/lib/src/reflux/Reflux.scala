@@ -1,20 +1,29 @@
 package reflux
 
-import cats.effect.{Async, IO}
-import cats.syntax.functor._
+import cats.effect.Async
 import org.http4s.Uri
-import org.http4s.blaze.client.BlazeClientBuilder
-
+import org.http4s.Uri.Authority
+import org.http4s.client.Client
 
 object Reflux {
-  def client[F[_] : Async](serverUrl: String): F[InfluxClient[F]] = client(Uri.unsafeFromString(serverUrl))
+  /** THe url parameter can contain InfluxDB credentials and the database name as following:
+   * htpp[s]://user:password@host[:port]/[database]
+   */
+  def client[F[_] : Async](http: Client[F], serverUrl: Uri): InfluxClient[F] = {
+    serverUrl match {
+      case Uri(_, Some(Authority(Some(userInfo), _, _)), path, _, _) =>
+        new InfluxClient[F](http, serverUrl)
+          .use(path.renderString)
+          .withCredentials(userInfo.username, userInfo.password.getOrElse(""))
 
-  def client[F[_] : Async](serverUrl: Uri): F[InfluxClient[F]] = for {
-    http  <- BlazeClientBuilder[F].resource.allocated.map(_._1)
-  } yield new InfluxClient[F](http, serverUrl)
+      case Uri(_, _, path, _, _) if !path.isEmpty =>
+        new InfluxClient[F](http, serverUrl).use(path.renderString)
 
-  def clientIO(serverUrl: String): IO[InfluxClient[IO]] = clientIO(Uri.unsafeFromString(serverUrl))
+      case u =>
+        new InfluxClient[F](http, u)
 
-  def clientIO(serverUrl: Uri): IO[InfluxClient[IO]] = client[IO](serverUrl)
+    }
+  }
 
+  def client[F[_] : Async](http: Client[F], serverUrl: String): InfluxClient[F] = client(http, Uri.unsafeFromString(serverUrl))
 }

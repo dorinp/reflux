@@ -13,7 +13,7 @@ class CsvHeader(headerLine: String) {
 
   def getString(data: Array[String], column: String): String = data(indices(column))
 
-  def columns = cols.drop(3)
+  def columns: Array[String] = cols.drop(3)
   def columnCount: Int = indices.size
   override def toString: String = headerLine
 }
@@ -112,7 +112,7 @@ trait Write[A] {
 }
 
 object Write {
-  def instance[A](f: A => String) = new Write[A] {
+  private def instance[A](f: A => String) = new Write[A] {
     override def write(a: A): String = f(a)
   }
 
@@ -127,14 +127,14 @@ object Csv {
   def rows[F[_], O](dataIndex: Int): Pipe[F, Byte, CsvRow] = in => {
     in.through(text.utf8.decode)
       .through(text.lines)
-      .filter(!_.isEmpty)
+      .filter(_.nonEmpty)
       .scan(null: CsvRow) {
         case (acc, line) => if (acc == null) CsvRow(new CsvHeader(line), null, dataIndex) else CsvRow(acc.header, Csv.split(line), dataIndex)
       }
     }.drop(2)
 
   // could be done with a regex, but this is 3x faster
-  def split(s: String) = {
+  def split(s: String): Array[String] = {
     val words: ArrayBuffer[String] = ArrayBuffer[String]()
     var inQuote = false
     var start = 0

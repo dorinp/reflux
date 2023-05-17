@@ -1,16 +1,16 @@
 package reflux
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, postRequestedFor, urlPathMatching}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockRule
 import org.http4s._
-import org.http4s.blaze.client.BlazeClientBuilder
+import org.http4s.ember.client.EmberClientBuilder
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import cats.effect.unsafe.implicits.global
 
 import java.time.Instant
 
@@ -63,7 +63,7 @@ class FakeInflux {
   wiremock.start()
 
 
-  private val http = BlazeClientBuilder[IO].resource.allocated.unsafeRunSync()._1
+  private val http = EmberClientBuilder.default[IO].build.allocated.unsafeRunSync()._1
   val client = new InfluxClient[IO](http, Uri.unsafeFromString(s"http://localhost:${wiremock.port()}"))
 
   def reset() = {
