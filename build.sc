@@ -19,7 +19,7 @@ object reflux extends ScalaModule {
 
     override def artifactName = "reflux"
 
-    def publishVersion = "0.1.2"
+    def publishVersion = "0.2.0"
 
     override def ivyDeps = Agg(
       ivy"org.http4s::http4s-client:$http4sVersion",

@@ -2,7 +2,7 @@ package reflux
 
 import cats.effect.Async
 import org.http4s.Uri
-import org.http4s.Uri.Authority
+import org.http4s.Uri.{Authority, Path}
 import org.http4s.client.Client
 
 object Reflux {
@@ -11,13 +11,13 @@ object Reflux {
    */
   def client[F[_] : Async](http: Client[F], serverUrl: Uri): InfluxClient[F] = {
     serverUrl match {
-      case Uri(_, Some(Authority(Some(userInfo), _, _)), path, _, _) =>
-        new InfluxClient[F](http, serverUrl)
-          .use(path.renderString)
+      case u@Uri(_, Some(Authority(Some(userInfo), _, _)), path, _, _) =>
+        new InfluxClient[F](http, u.withPath(Path.empty))
+          .use(path.segments.headOption.map(_.encoded))
           .withCredentials(userInfo.username, userInfo.password.getOrElse(""))
 
-      case Uri(_, _, path, _, _) if !path.isEmpty =>
-        new InfluxClient[F](http, serverUrl).use(path.renderString)
+      case u@Uri(_, _, path, _, _) if !path.isEmpty =>
+        new InfluxClient[F](http, u.withPath(Path.empty)).use(path.segments.headOption.map(_.encoded))
 
       case u =>
         new InfluxClient[F](http, u)
