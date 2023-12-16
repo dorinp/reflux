@@ -5,8 +5,7 @@ import reflux.{CsvRow, Read, TimeColumn}
 
 object auto {
   implicit val hnilRead: Read[HNil] = Read.instance(_ => HNil)
-
-  implicit def timeColRead[T <: HList](implicit hRead: Read[TimeColumn], tRead: Read[T]): Read[TimeColumn :: T] =
+  implicit def timeColRead[T <: HList](implicit tRead: Read[T]): Read[TimeColumn :: T] =
     Read.instance { row => TimeColumn(row.time) :: tRead.read(row) }
 
   implicit def hListRead[H, T <: HList](implicit hRead: Read[H], tRead: Read[T]): Read[H :: T] =
@@ -17,7 +16,7 @@ object auto {
 }
 
 object ReadInstances {
-  implicit val stringReader = new Read[String] {
+  implicit val stringReader: Read[String] = new Read[String] {
     override def read(row: CsvRow): String = row.getString(0)
   }
 }

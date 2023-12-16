@@ -51,6 +51,11 @@ class GenericSpec extends AnyFunSuite with Matchers with BeforeAndAfterEach {
     stubs.verifyDataPosted("temperature,city=london temperature=11 0\n")
   }
 
+  test("writing without tags") {
+    influx.write("temperature", Measurement(Seq("temperature" -> "11"), tags = Nil, time = Some(Instant.EPOCH))).unsafeRunSync()
+    stubs.verifyDataPosted("temperature temperature=11 0\n")
+  }
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     stubs.reset()
