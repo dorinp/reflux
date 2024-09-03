@@ -10,4 +10,4 @@ publish-local:
   mill reflux.generic.publishM2Local
 
 idea:
-  ./mill mill.scalalib.GenIdea/idea
+  ./mill mill.idea.GenIdea/idea

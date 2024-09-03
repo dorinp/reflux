@@ -12,7 +12,7 @@ object Reflux {
   def client[F[_] : Async](http: Client[F], serverUrl: Uri): InfluxClient[F] = {
     serverUrl match {
       case u@Uri(_, Some(Authority(Some(userInfo), _, _)), path, _, _) =>
-        new InfluxClient[F](http, u.withPath(Path.empty).copy(authority = None))
+        new InfluxClient[F](http, u.withPath(Path.empty).copy(authority = u.authority.map(_.copy(userInfo = None))))
           .use(path.segments.headOption.map(_.encoded))
           .withCredentials(userInfo.username, userInfo.password.getOrElse(""))
 
