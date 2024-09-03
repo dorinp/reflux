@@ -4,8 +4,8 @@ import publish._
 
 object reflux extends ScalaModule {
 
-  def scalaVersion = "2.13.12"
-  val http4sVersion = "0.23.23"
+  def scalaVersion = "2.13.14"
+  val http4sVersion = "0.23.27"
 
   object lib extends CommonModule with PublishModule {
     def pomSettings = PomSettings(
@@ -18,7 +18,7 @@ object reflux extends ScalaModule {
     )
 
     override def artifactName = "reflux"
-    override def publishVersion = "0.2.1"
+    override def publishVersion = "0.2.2"
 
     override def ivyDeps = Agg(
       ivy"org.http4s::http4s-client:$http4sVersion",
