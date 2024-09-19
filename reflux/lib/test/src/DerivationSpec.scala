@@ -22,6 +22,13 @@ class DerivationSpec extends AnyFunSuite with Matchers with BeforeAndAfterEach {
     influx.stream[Measurement]("select * from weather").compile.toVector.unsafeRunSync().length shouldBe 2
   }
 
+  test("derive case class") {
+    stubs.stub("temps,tags,time,city,temperature", "temps,,1571002272000,london,11", "temps,,1571002272000,paris,14")
+    case class Weather(city: String, temperature: Int) derives reflux.Read
+    val rows = influx.asVector[Weather]("select * from weather").unsafeRunSync()
+    rows `shouldBe` Vector(Weather("london", 11), Weather("paris", 14))
+  }
+
   test("writing") {
     influx.write("temperature", Measurement(Seq("temperature" -> "11"), Seq("city" -> "london"), time = Some(Instant.EPOCH))).unsafeRunSync()
     stubs.verifyDataPosted("temperature,city=london temperature=11 0\n")

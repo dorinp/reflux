@@ -6,6 +6,8 @@ import fs2.{Pipe, text}
 import java.time.Instant
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
+import scala.compiletime.{erasedValue, error, summonInline}
+import scala.deriving.*
 
 class CsvHeader(headerLine: String) {
   private val cols: Array[String] = Csv.split(headerLine)
@@ -146,6 +148,38 @@ object Read {
       summon[Read[F]].read(row.copy(cursor = row.cursor + 5)),
     )
   }
+
+  inline def derived[A](implicit m: Mirror.Of[A]): Read[A] = {
+    lazy val elemInstances = summonInstances[A, m.MirroredElemTypes]
+    inline m match
+      case s: Mirror.SumOf[A] => error("only Product types are supported")
+      case p: Mirror.ProductOf[A] => readProduct(p, elemInstances)
+  }
+
+  def readProduct[A](m: Mirror.ProductOf[A], elems: => List[Read[?]]): Read[A] =
+    new Read[A] {
+      override def read(row: CsvRow): A = {
+        val p = elems.zipWithIndex.map((a, i) => a.read(row.copy(cursor = row.cursor + i))).toArray
+        val t = Tuple.fromArray(p)
+        m.fromProduct(t)
+      }
+    }
+
+  inline def summonInstances[T, Elems <: Tuple]: List[Read[?]] =
+    inline erasedValue[Elems] match
+      case _: (elem *: elems) => deriveOrSummon[T, elem] :: summonInstances[T, elems]
+      case _: EmptyTuple => Nil
+
+  inline def deriveOrSummon[T, Elem]: Read[Elem] =
+    inline erasedValue[Elem] match
+      case _: T => deriveRec[T, Elem]
+      case _ => summonInline[Read[Elem]]
+
+  inline def deriveRec[T, Elem]: Read[Elem] =
+    inline erasedValue[T] match
+      case _: Elem => error("infinite recursive derivation")
+      case _ => Read.derived[Elem](using summonInline[Mirror.Of[Elem]])
+
 
 }
 
