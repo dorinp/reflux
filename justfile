@@ -6,7 +6,7 @@ test:
 #  ./mill reflux.generic.test
 
 publish-local:
-  mill reflux.lib.publishM2Local
+  ./mill reflux.lib.publishM2Local
 #  mill reflux.generic.publishM2Local
 
 idea:

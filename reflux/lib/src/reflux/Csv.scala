@@ -1,9 +1,9 @@
 package reflux
 
-import java.time.Instant
 import cats.Eq
 import fs2.{Pipe, text}
 
+import java.time.Instant
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
 
@@ -18,7 +18,7 @@ class CsvHeader(headerLine: String) {
   override def toString: String = headerLine
 }
 
-case class CsvRow(header: CsvHeader, data: Array[String], cursor: Int) {
+final case class CsvRow(header: CsvHeader, data: Array[String], cursor: Int) {
   def columns: Array[String] = header.columns
   def tuples: Array[(String, String)] = columns.zip(data.drop(cursor))
   def time: Instant = Instant.ofEpochMilli(getString("time").toLong)
@@ -29,8 +29,8 @@ case class CsvRow(header: CsvHeader, data: Array[String], cursor: Int) {
 
   def getOption(field: String): Option[String] = { val a = header.getString(data, field); if(a.isEmpty) None else Some(a) }
   def getString(field: String): String = header.getString(data, field)
-  def getString(index: Int): String = data(index)
-  def getAtCursor: String = data(cursor)
+  inline def getString(index: Int): String = data(index)
+  inline def getAtCursor: String = getString(cursor)
 
   def tags: Array[(String, String)] = getString("tags").split(",").flatMap(a => {
     val arr = a.split("="); if (arr.length > 1) Some(arr(0) -> arr(1)) else None
@@ -93,7 +93,7 @@ trait Read[A] {
 
 object Read {
   def apply[A](implicit r: Read[A]): Read[A] = r
-  def instance[A](f: CsvRow => A): Read[A] = (row: CsvRow) => f(row)
+  inline def instance[A](f: CsvRow => A): Read[A] = (row: CsvRow) => f(row)
   implicit val rowRead: Read[CsvRow] = instance(identity)
   implicit val measurementRead: Read[Measurement] = instance(_.toMeasurement)
   implicit val stringRead: Read[String] = Read.instance(_.getAtCursor)
@@ -101,10 +101,52 @@ object Read {
   implicit val longRead: Read[Long] = Read.instance(_.getAtCursor.toLong)
   implicit val boolRead: Read[Boolean] = Read.instance(x => !(x.getAtCursor == "0"))
   implicit val doubleRead: Read[Double] = Read.instance(_.getAtCursor.toDouble)
+  implicit val floatRead: Read[Float] = Read.instance(_.getAtCursor.toFloat)
   implicit val bigDRead: Read[BigDecimal] = Read.instance(r => BigDecimal(r.getAtCursor))
+  implicit val bigIRead: Read[BigInt] = Read.instance(r => BigInt(r.getAtCursor))
   implicit val timeRead: Read[TimeColumn] = Read.instance(r => TimeColumn(r.time))
   implicit val instantRead: Read[Instant] = Read.instance(r => Instant.ofEpochMilli(r.getString("time").toLong))
+
   implicit def optionRead[A](implicit reader: Read[A]): Read[Option[A]] = Read.instance(row => if (row.getAtCursor.isEmpty) None else Some(reader.read(row)))
+
+  implicit def tuple2Read[A: Read, B: Read]: Read[(A, B)] = instance { row =>
+    (summon[Read[A]].read(row), summon[Read[B]].read(row.copy(cursor = row.cursor + 1)))
+  }
+
+  implicit def tuple3Read[A: Read, B: Read, C: Read]: Read[(A, B, C)] = instance { row =>
+    (summon[Read[A]].read(row),
+      summon[Read[B]].read(row.copy(cursor = row.cursor + 1)),
+      summon[Read[C]].read(row.copy(cursor = row.cursor + 2)),
+    )
+  }
+
+  implicit def tuple4Read[A: Read, B: Read, C: Read, D: Read]: Read[(A, B, C, D)] = instance { row =>
+    (summon[Read[A]].read(row),
+      summon[Read[B]].read(row.copy(cursor = row.cursor + 1)),
+      summon[Read[C]].read(row.copy(cursor = row.cursor + 2)),
+      summon[Read[D]].read(row.copy(cursor = row.cursor + 3)),
+    )
+  }
+
+  implicit def tuple5Read[A: Read, B: Read, C: Read, D: Read, E: Read]: Read[(A, B, C, D, E)] = instance { row =>
+    (summon[Read[A]].read(row),
+      summon[Read[B]].read(row.copy(cursor = row.cursor + 1)),
+      summon[Read[C]].read(row.copy(cursor = row.cursor + 2)),
+      summon[Read[D]].read(row.copy(cursor = row.cursor + 3)),
+      summon[Read[E]].read(row.copy(cursor = row.cursor + 4)),
+    )
+  }
+
+  implicit def tuple6Read[A: Read, B: Read, C: Read, D: Read, E: Read, F: Read]: Read[(A, B, C, D, E, F)] = instance { row =>
+    (summon[Read[A]].read(row),
+      summon[Read[B]].read(row.copy(cursor = row.cursor + 1)),
+      summon[Read[C]].read(row.copy(cursor = row.cursor + 2)),
+      summon[Read[D]].read(row.copy(cursor = row.cursor + 3)),
+      summon[Read[E]].read(row.copy(cursor = row.cursor + 4)),
+      summon[Read[F]].read(row.copy(cursor = row.cursor + 5)),
+    )
+  }
+
 }
 
 trait Write[A] {

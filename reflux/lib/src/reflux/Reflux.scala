@@ -6,7 +6,7 @@ import org.http4s.Uri.{Authority, Path}
 import org.http4s.client.Client
 
 object Reflux {
-  /** THe url parameter can contain InfluxDB credentials and the database name as following:
+  /** The url parameter can contain InfluxDB credentials and the database name as following:
    * htpp[s]://user:password@host[:port]/[database]
    */
   def client[F[_] : Async](http: Client[F], serverUrl: Uri): InfluxClient[F] = {

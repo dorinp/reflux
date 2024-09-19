@@ -14,10 +14,10 @@ class InfluxClient[F[_]: Async](http: Client[F], val serverUrl: Uri, db: Option[
   private val writeUri: Uri = (serverUrl / "write").withOptionQueryParam("db", db).withQueryParam("precision", "ms")
 
   def write(retentionPolicy: String, measurement: String, values: Measurement*): F[Unit] =
-    write(measurement, fs2.Stream(values: _*), Some(retentionPolicy))
+    write(measurement, fs2.Stream(values*), Some(retentionPolicy))
 
   def write(measurement: String, values: Measurement*): F[Unit] =
-    write(measurement, fs2.Stream(values: _*))
+    write(measurement, fs2.Stream(values*))
 
   def write[A](values: Iterable[A])(implicit mapper: ToMeasurement[A]): F[Unit] = write(values, None)
 

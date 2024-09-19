@@ -62,26 +62,3 @@ class GenericSpec extends AnyFunSuite with Matchers with BeforeAndAfterEach {
   }
 }
 
-class FakeInflux {
-
-  private val wiremock = new WireMockRule(WireMockConfiguration.options().dynamicPort())
-  wiremock.start()
-
-
-  private val http = EmberClientBuilder.default[IO].build.allocated.unsafeRunSync()._1
-  val client = new InfluxClient[IO](http, Uri.unsafeFromString(s"http://localhost:${wiremock.port()}"))
-
-  def reset() = {
-    wiremock.resetAll()
-    wiremock.stubFor(any(urlPathMatching("/write")).willReturn(aResponse().withStatus(204)))
-  }
-
-  def verifyDataPosted(expected: String): Unit = wiremock.verify(postRequestedFor(urlPathMatching("/write*")).withRequestBody(WireMock.containing(expected)))
-
-  def stub(header: String, data: String*) = {
-    wiremock.stubFor(any(urlPathMatching("/query")).willReturn(
-      aResponse().withStatus(200).withBody((header +: data).mkString("\n"))
-    ))
-
-  }
-}
