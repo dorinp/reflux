@@ -10,8 +10,8 @@ import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers.{Accept, Authorization}
 
 class InfluxClient[F[_]: Async](http: Client[F], val serverUrl: Uri, db: Option[String] = None) extends Http4sClientDsl[F] with Tools[F] {
-  private val queryUri: Uri = (serverUrl / "query").withOptionQueryParam("db", db).withQueryParam("epoch", "ms")
-  private val writeUri: Uri = (serverUrl / "write").withOptionQueryParam("db", db).withQueryParam("precision", "ms")
+  private[reflux] val queryUri: Uri = (serverUrl / "query").withOptionQueryParam("db", db).withQueryParam("epoch", "ms")
+  private[reflux] val writeUri: Uri = (serverUrl / "write").withOptionQueryParam("db", db).withQueryParam("precision", "ms")
 
   def write(retentionPolicy: String, measurement: String, values: Measurement*): F[Unit] =
     write(measurement, fs2.Stream(values*), Some(retentionPolicy))

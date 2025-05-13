@@ -13,7 +13,7 @@ class FakeInflux {
   private val wiremock = new WireMockRule(WireMockConfiguration.options().dynamicPort())
   wiremock.start()
 
-  private val http = EmberClientBuilder.default[IO].build.allocated.unsafeRunSync()._1
+  val http = EmberClientBuilder.default[IO].build.allocated.unsafeRunSync()._1
   val client       = new InfluxClient[IO](http, Uri.unsafeFromString(s"http://localhost:${wiremock.port()}"))
 
   def reset() = {
